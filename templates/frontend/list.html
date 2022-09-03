@@ -115,6 +115,8 @@
 
     const csrftoken = getCookie('csrftoken');
 
+    var active_item = null;
+
     buildList()
 
     function buildList() {
@@ -146,6 +148,17 @@
 						</div>
 					`
                     wrapper.innerHTML += item
+
+                }
+                for (var i in list) {
+                    var editBtn = document.getElementsByClassName('edit')[i]
+
+                    editBtn.addEventListener('click', (function (item) {
+                        {#editItem(list[i])#}
+                        return function () {
+                            editItem(item)
+                        }
+                    })(list[i]))
                 }
             })
     }
@@ -172,6 +185,11 @@
         })
 
     })
+
+    function editItem(item) {
+        active_item = item
+        document.getElementById('title').value = active_item.title
+    }
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"
