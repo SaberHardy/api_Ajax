@@ -113,7 +113,8 @@
         return cookieValue;
     }
 
-    const csrftoken = getCookie('csrftoken');
+    var csrftoken = getCookie('csrftoken');
+    var list_snapshots = []
 
     var active_item = null;
 
@@ -121,8 +122,9 @@
 
     function buildList() {
         var wrapper = document.getElementById('list-wrapper')
-        wrapper.innerHTML = ''
+        //wrapper.innerHTML = ''
 
+        var list_snapshot = []
 
         var url = 'http://127.0.0.1:8000/api/list/'
 
@@ -132,13 +134,20 @@
                 console.log('Data:', data)
 
                 var list = data
-
                 for (var i in list) {
+
+                    try {
+                        document.getElementById(`data-row-${i}`).remove()
+                    } catch (err) {}
+
+                    var title = `<span class="title">${list[i].title}</span>`
+                    if (list[i].completed == true) {
+                        title = `<strike class="title">${list[i].title}</strike>`
+                    }
+
                     var item = `
 						<div id="data-row-${i}" class="task-wrapper flex-wrapper">
-							<div style="flex:7">
-								<span class="title">${list[i].title}</span>
-							</div>
+							<div style="flex:7"> ${title} </div>
 							<div style="flex:1">
 								<button class="btn btn-sm btn-outline-info edit">Edit </button>
 							</div>
@@ -151,21 +160,35 @@
 
                 }
 
+                if (list_snapshot.length > list.length) {
+                    for (var i = list.length; i < list_snapshot.length; i++) {
+                        document.getElementById(`data-row-${i}`).remove()
+                    }
+                }
+
+                list_snapshot = list
+
                 for (var i in list) {
                     var editBtn = document.getElementsByClassName('edit')[i]
                     var deleteBtn = document.getElementsByClassName('delete')[i]
+                    var title = document.getElementsByClassName('title')[i]
+
 
                     editBtn.addEventListener('click', (function (item) {
-                        {#editItem(list[i])#}
                         return function () {
                             editItem(item)
                         }
                     })(list[i]))
 
-                     deleteBtn.addEventListener('click', (function (item) {
-                        {#editItem(list[i])#}
+                    deleteBtn.addEventListener('click', (function (item) {
                         return function () {
                             deleteItem(item)
+                        }
+                    })(list[i]))
+
+                    title.addEventListener('click', (function (item) {
+                        return function () {
+                            strikeUnstrike(item)
                         }
                     })(list[i]))
                 }
@@ -180,7 +203,7 @@
 
         var url = 'http://127.0.0.1:8000/api/create/'
 
-        if(active_item != null){
+        if (active_item != null) {
             var url = `http://127.0.0.1:8000/api/update/${active_item.id}/`
             active_item = null
         }
@@ -207,15 +230,35 @@
     }
 
     function deleteItem(item) {
-        console.log('delete clicked!!')
+
         var url = `http://127.0.0.1:8000/api/delete/${item.id}/`
 
         fetch(url, {
             method: "DELETE",
             headers: {
-                    'Content-type': 'application/json',
-                    'X-CSRFToken': csrftoken,
+                'Content-type': 'application/json',
+                'X-CSRFToken': csrftoken,
             },
+            // This is for rebuild the list items
+        }).then((response => {
+            buildList()
+        }))
+    }
+
+    function strikeUnstrike(item) {
+        console.log('item was selected!!', item.id)
+        var url = `http://127.0.0.1:8000/api/update/${item.id}/`
+        item.completed = !item.completed
+        fetch(url, {
+            method: "POST",
+            headers: {
+                'Content-type': 'application/json',
+                'X-CSRFToken': csrftoken,
+            },
+            body: JSON.stringify({
+                'title': item.title,
+                'completed': item.completed,
+            })
             // This is for rebuild the list items
         }).then((response => {
             buildList()
